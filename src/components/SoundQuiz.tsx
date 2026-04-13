@@ -41,34 +41,44 @@ const buildChoices = (answer: AnimalQuiz) => {
   return choices;
 };
 
-const getRandomQuestion = () => {
-  const answer = ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
-  const choices = buildChoices(answer);
-  return { answer, choices };
-};
-
-const getInitialQuestion = () => {
-  const choices = ANIMALS.slice(0, 4);
-  return { answer: choices[0], choices };
-};
-
 type ResultState = "idle" | "correct" | "wrong";
+type GameState = "playing" | "cleared" | "failed";
 
 export default function SoundQuiz() {
-  const [question, setQuestion] = useState(getInitialQuestion);
+  const [answerOrder, setAnswerOrder] = useState(() => getShuffled(ANIMALS));
+  const [questionIndex, setQuestionIndex] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0);
   const [result, setResult] = useState<ResultState>("idle");
+  const [gameState, setGameState] = useState<GameState>("playing");
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioMessage, setAudioMessage] = useState("");
   const [correctMessage, setCorrectMessage] = useState("");
 
+  const totalQuestions = answerOrder.length;
+  const currentAnswer = answerOrder[questionIndex];
+  const choices = useMemo(() => buildChoices(currentAnswer), [currentAnswer]);
+
   const resultText = useMemo(() => {
+    if (gameState === "cleared") return "ぜんもん せいかい！ クリア！";
+    if (gameState === "failed") return "こんかいは クリア ならず";
     if (result === "correct") return "せいかい！";
     if (result === "wrong") return "ざんねん！";
     return "どの どうぶつの こえ かな？";
-  }, [result]);
+  }, [gameState, result]);
+
+  const resetGame = useCallback(() => {
+    setAnswerOrder(getShuffled(ANIMALS));
+    setQuestionIndex(0);
+    setCorrectCount(0);
+    setResult("idle");
+    setGameState("playing");
+    setAudioMessage("");
+    setCorrectMessage("");
+    setIsPlaying(false);
+  }, []);
 
   const playSound = useCallback(async () => {
-    const soundPath = `/sounds/${question.answer.soundFile}`;
+    const soundPath = `/sounds/${currentAnswer.soundFile}`;
     setAudioMessage("");
     setIsPlaying(true);
 
@@ -92,21 +102,35 @@ export default function SoundQuiz() {
       setAudioMessage("おとが さいせい できないよ");
       setIsPlaying(false);
     }
-  }, [question.answer.soundFile]);
+  }, [currentAnswer.soundFile]);
 
   const handleSelect = useCallback(
     (name: string) => {
-      const isCorrect = name === question.answer.name;
+      if (result !== "idle" || gameState !== "playing") return;
+
+      const isCorrect = name === currentAnswer.name;
       setResult(isCorrect ? "correct" : "wrong");
-      setCorrectMessage(isCorrect ? "" : `せいかいは「${question.answer.name}」だよ`);
+      setCorrectMessage(isCorrect ? "" : `せいかいは「${currentAnswer.name}」だよ`);
 
       window.setTimeout(() => {
-        setQuestion(getRandomQuestion());
+        const nextCorrectCount = correctCount + (isCorrect ? 1 : 0);
+        const isLastQuestion = questionIndex + 1 >= totalQuestions;
+
+        if (isLastQuestion) {
+          setCorrectCount(nextCorrectCount);
+          setGameState(nextCorrectCount === totalQuestions ? "cleared" : "failed");
+          setResult("idle");
+          setCorrectMessage("");
+          return;
+        }
+
+        setQuestionIndex((prev) => prev + 1);
+        setCorrectCount(nextCorrectCount);
         setResult("idle");
         setCorrectMessage("");
       }, 1200);
     },
-    [question.answer.name],
+    [correctCount, currentAnswer.name, gameState, questionIndex, result, totalQuestions],
   );
 
   return (
@@ -135,20 +159,20 @@ export default function SoundQuiz() {
 
           <div
             className={`min-h-14 text-center text-4xl font-extrabold md:text-5xl ${
-              result === "correct"
+              gameState === "cleared" || result === "correct"
                 ? "animate-bounce text-emerald-500"
-                : result === "wrong"
+                : gameState === "failed" || result === "wrong"
                   ? "text-rose-500"
                   : "text-sky-700"
             }`}
           >
-            {result === "correct" && (
+            {(gameState === "cleared" || result === "correct") && (
               <span className="mr-2 inline-flex items-center">
                 <Sparkles className="h-8 w-8" />
               </span>
             )}
             {resultText}
-            {result === "correct" && (
+            {(gameState === "cleared" || result === "correct") && (
               <span className="ml-2 inline-flex items-center">
                 <Sparkles className="h-8 w-8" />
               </span>
@@ -159,21 +183,40 @@ export default function SoundQuiz() {
           </p>
         </div>
 
-        <div className="grid w-full grid-cols-2 gap-6">
-          {question.choices.map((animal) => (
-            <button
-              key={animal.name}
-              type="button"
-              onClick={() => handleSelect(animal.name)}
-              className={`rounded-3xl border-2 border-white px-4 py-7 text-3xl font-black text-slate-800 shadow-md transition active:scale-95 md:text-4xl ${
-                result === "wrong" && animal.name !== question.answer.name
-                  ? "animate-shake bg-rose-200"
-                  : "bg-violet-100 hover:bg-violet-200"
-              }`}
-            >
-              {animal.name}
-            </button>
-          ))}
+        <div className="w-full">
+          <p className="mb-4 text-center text-xl font-bold text-slate-700 md:text-2xl">
+            {Math.min(questionIndex + 1, totalQuestions)} / {totalQuestions}
+          </p>
+
+          {gameState === "playing" ? (
+            <div className="grid w-full grid-cols-2 gap-6">
+              {choices.map((animal) => (
+                <button
+                  key={animal.name}
+                  type="button"
+                  onClick={() => handleSelect(animal.name)}
+                  disabled={result !== "idle"}
+                  className={`rounded-3xl border-2 border-white px-4 py-7 text-3xl font-black text-slate-800 shadow-md transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-90 md:text-4xl ${
+                    result === "wrong" && animal.name !== currentAnswer.name
+                      ? "animate-shake bg-rose-200"
+                      : "bg-violet-100 hover:bg-violet-200"
+                  }`}
+                >
+                  {animal.name}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={resetGame}
+                className="rounded-2xl bg-emerald-500 px-8 py-4 text-2xl font-black text-white shadow-md transition hover:bg-emerald-600 active:scale-95"
+              >
+                もういちど あそぶ
+              </button>
+            </div>
+          )}
         </div>
       </main>
     </div>
