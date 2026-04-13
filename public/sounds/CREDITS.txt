@@ -21,3 +21,43 @@ lion.mp3
 - 元素材: Lion raring-sound1TamilNadu178.ogg
 - URL: https://commons.wikimedia.org/wiki/File:Lion_raring-sound1TamilNadu178.ogg
 - License: CC BY-SA 4.0
+
+sheep.mp3
+- 元素材: Sheep bleating.ogg
+- URL: https://commons.wikimedia.org/wiki/File:Sheep_bleating.ogg
+- License: Public domain
+
+chicken.mp3
+- 元素材: Rooster crowing.oga
+- URL: https://commons.wikimedia.org/wiki/File:Rooster_crowing.oga
+- License: CC BY-SA 3.0
+
+frog.mp3
+- 元素材: Single Frog Croak.oga
+- URL: https://commons.wikimedia.org/wiki/File:Single_Frog_Croak.oga
+- License: CC BY-SA 4.0
+
+horse.mp3
+- 元素材: Wiehern.ogg
+- URL: https://commons.wikimedia.org/wiki/File:Wiehern.ogg
+- License: Public domain
+
+uguisu.mp3
+- 元素材: Bird singing.ogg
+- URL: https://commons.wikimedia.org/wiki/File:Bird_singing.ogg
+- License: CC BY-SA 3.0
+
+suzumushi.mp3
+- 元素材: Suzumushi 06z3310.ogg
+- URL: https://commons.wikimedia.org/wiki/File:Suzumushi_06z3310.ogg
+- License: CC BY 2.1 JP
+
+owl.mp3
+- 元素材: Barred Owl, Yellowstone National Park.oga
+- URL: https://commons.wikimedia.org/wiki/File:Barred_Owl,_Yellowstone_National_Park.oga
+- License: Public domain
+
+monkey.mp3
+- 元素材: Vervet Monkey (Chlorocebus pygerythrus) (W CERCOPITHECUS AETHIOPS R2 C2).ogg
+- URL: https://commons.wikimedia.org/wiki/File:Vervet_Monkey_(Chlorocebus_pygerythrus)_(W_CERCOPITHECUS_AETHIOPS_R2_C2).ogg
+- License: CC BY 4.0

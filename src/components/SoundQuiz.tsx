@@ -13,20 +13,43 @@ const ANIMALS: AnimalQuiz[] = [
   { name: "ねこ", soundFile: "cat.mp3" },
   { name: "ぞう", soundFile: "elephant.mp3" },
   { name: "らいおん", soundFile: "lion.mp3" },
+  { name: "ひつじ", soundFile: "sheep.mp3" },
+  { name: "にわとり", soundFile: "chicken.mp3" },
+  { name: "かえる", soundFile: "frog.mp3" },
+  { name: "うま", soundFile: "horse.mp3" },
+  { name: "うぐいす", soundFile: "uguisu.mp3" },
+  { name: "すずむし", soundFile: "suzumushi.mp3" },
+  { name: "ふくろう", soundFile: "owl.mp3" },
+  { name: "さる", soundFile: "monkey.mp3" },
 ];
 
 const getShuffled = <T,>(items: T[]) => {
   return [...items].sort(() => Math.random() - 0.5);
 };
 
+const buildChoices = (answer: AnimalQuiz) => {
+  const distractors = getShuffled(
+    ANIMALS.filter((animal) => animal.name !== answer.name),
+  ).slice(0, 3);
+  const choices = getShuffled([answer, ...distractors]);
+
+  // Safety guard: always keep a valid 4-choice quiz.
+  if (choices.length !== 4 || !choices.some((animal) => animal.name === answer.name)) {
+    return [answer, ...ANIMALS.filter((animal) => animal.name !== answer.name).slice(0, 3)];
+  }
+
+  return choices;
+};
+
 const getRandomQuestion = () => {
-  const choices = getShuffled(ANIMALS);
-  const answer = choices[Math.floor(Math.random() * choices.length)];
+  const answer = ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
+  const choices = buildChoices(answer);
   return { answer, choices };
 };
 
 const getInitialQuestion = () => {
-  return { answer: ANIMALS[0], choices: ANIMALS };
+  const choices = ANIMALS.slice(0, 4);
+  return { answer: choices[0], choices };
 };
 
 type ResultState = "idle" | "correct" | "wrong";
@@ -36,6 +59,7 @@ export default function SoundQuiz() {
   const [result, setResult] = useState<ResultState>("idle");
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioMessage, setAudioMessage] = useState("");
+  const [correctMessage, setCorrectMessage] = useState("");
 
   const resultText = useMemo(() => {
     if (result === "correct") return "せいかい！";
@@ -74,10 +98,12 @@ export default function SoundQuiz() {
     (name: string) => {
       const isCorrect = name === question.answer.name;
       setResult(isCorrect ? "correct" : "wrong");
+      setCorrectMessage(isCorrect ? "" : `せいかいは「${question.answer.name}」だよ`);
 
       window.setTimeout(() => {
         setQuestion(getRandomQuestion());
         setResult("idle");
+        setCorrectMessage("");
       }, 1200);
     },
     [question.answer.name],
@@ -128,6 +154,9 @@ export default function SoundQuiz() {
               </span>
             )}
           </div>
+          <p className="min-h-8 text-center text-xl font-bold text-rose-600 md:text-2xl">
+            {correctMessage}
+          </p>
         </div>
 
         <div className="grid w-full grid-cols-2 gap-6">
