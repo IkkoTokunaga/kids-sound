@@ -1,0 +1,23 @@
+おと そざい くれじっと
+
+このふぁいるの おとは Wikimedia Commons の ふりーそざいを つかっています。
+
+dog.mp3
+- 元素材: Barking of a dog 2.ogg
+- URL: https://commons.wikimedia.org/wiki/File:Barking_of_a_dog_2.ogg
+- License: CC BY-SA 3.0
+
+cat.mp3
+- 元素材: Meow.ogg
+- URL: https://commons.wikimedia.org/wiki/File:Meow.ogg
+- License: CC BY-SA 3.0
+
+elephant.mp3
+- 元素材: Elephant voice - trumpeting.ogg
+- URL: https://commons.wikimedia.org/wiki/File:Elephant_voice_-_trumpeting.ogg
+- License: CC BY-SA 3.0
+
+lion.mp3
+- 元素材: Lion raring-sound1TamilNadu178.ogg
+- URL: https://commons.wikimedia.org/wiki/File:Lion_raring-sound1TamilNadu178.ogg
+- License: CC BY-SA 4.0
