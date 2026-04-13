@@ -1,7 +1,7 @@
 "use client";
 
 import { Sparkles, Volume2 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 type AnimalQuiz = {
   name: string;
@@ -53,6 +53,7 @@ export default function SoundQuiz() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioMessage, setAudioMessage] = useState("");
   const [correctMessage, setCorrectMessage] = useState("");
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const totalQuestions = answerOrder.length;
   const currentAnswer = answerOrder[questionIndex];
@@ -66,7 +67,20 @@ export default function SoundQuiz() {
     return "どの どうぶつの こえ かな？";
   }, [gameState, result]);
 
+  const stopSound = useCallback(() => {
+    const currentAudio = audioRef.current;
+    if (!currentAudio) return;
+
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+    currentAudio.onended = null;
+    currentAudio.onerror = null;
+    audioRef.current = null;
+    setIsPlaying(false);
+  }, []);
+
   const resetGame = useCallback(() => {
+    stopSound();
     setAnswerOrder(getShuffled(ANIMALS));
     setQuestionIndex(0);
     setCorrectCount(0);
@@ -75,7 +89,7 @@ export default function SoundQuiz() {
     setAudioMessage("");
     setCorrectMessage("");
     setIsPlaying(false);
-  }, []);
+  }, [stopSound]);
 
   const playSound = useCallback(async () => {
     if (isPlaying) return;
@@ -93,9 +107,14 @@ export default function SoundQuiz() {
       }
 
       const audio = new Audio(soundPath);
-      audio.onended = () => setIsPlaying(false);
+      audioRef.current = audio;
+      audio.onended = () => {
+        audioRef.current = null;
+        setIsPlaying(false);
+      };
       audio.onerror = () => {
         setAudioMessage("おとが さいせい できないよ");
+        audioRef.current = null;
         setIsPlaying(false);
       };
 
@@ -109,6 +128,7 @@ export default function SoundQuiz() {
   const handleSelect = useCallback(
     (name: string) => {
       if (result !== "idle" || gameState !== "playing") return;
+      stopSound();
 
       const isCorrect = name === currentAnswer.name;
       setResult(isCorrect ? "correct" : "wrong");
@@ -132,36 +152,36 @@ export default function SoundQuiz() {
         setCorrectMessage("");
       }, 1200);
     },
-    [correctCount, currentAnswer.name, gameState, questionIndex, result, totalQuestions],
+    [correctCount, currentAnswer.name, gameState, questionIndex, result, stopSound, totalQuestions],
   );
 
   return (
-    <div className="flex h-[100dvh] w-full items-center justify-center overflow-hidden bg-gradient-to-b from-sky-100 via-emerald-100 to-yellow-100 p-2 md:p-8">
-      <main className="flex h-full w-full max-w-4xl flex-col items-center justify-between gap-2 rounded-3xl bg-white/80 p-3 shadow-xl backdrop-blur-sm md:gap-5 md:p-10">
-        <h1 className="text-center text-[clamp(1.7rem,5.2dvh,3rem)] font-black tracking-wide text-fuchsia-600">
+    <div className="flex h-[100dvh] w-full items-center justify-center overflow-hidden bg-gradient-to-b from-sky-100 via-emerald-100 to-yellow-100 p-1 md:p-4">
+      <main className="grid h-[calc(100dvh-0.5rem)] w-full max-w-4xl grid-rows-[auto_1fr_auto] items-center gap-1 overflow-hidden rounded-3xl bg-white/80 p-2 shadow-xl backdrop-blur-sm md:h-[calc(100dvh-2rem)] md:gap-3 md:p-6">
+        <h1 className="text-center text-[clamp(1.35rem,3.8dvh,2.4rem)] font-black tracking-wide text-fuchsia-600">
           おとあそび
         </h1>
 
-        <div className="flex flex-col items-center gap-2 md:gap-5">
+        <div className="flex flex-col items-center justify-center gap-1 md:gap-3">
           <button
             type="button"
             onClick={playSound}
             disabled={isPlaying}
-            className={`flex h-[min(26dvh,14rem)] w-[min(26dvh,14rem)] items-center justify-center rounded-3xl border-4 border-white bg-orange-400 text-white shadow-lg transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 md:h-64 md:w-64 ${
+            className={`flex h-[min(20dvh,11rem)] w-[min(20dvh,11rem)] items-center justify-center rounded-3xl border-4 border-white bg-orange-400 text-white shadow-lg transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 md:h-[min(24dvh,13rem)] md:w-[min(24dvh,13rem)] ${
               isPlaying ? "animate-pulse" : "hover:bg-orange-500"
             }`}
           >
-            <span className="flex flex-col items-center gap-1 text-[clamp(1rem,3.1dvh,1.875rem)] font-bold">
-              <Volume2 className="h-[min(9dvh,4rem)] w-[min(9dvh,4rem)] md:h-20 md:w-20" />
+            <span className="flex flex-col items-center gap-1 text-[clamp(0.9rem,2.4dvh,1.4rem)] font-bold">
+              <Volume2 className="h-[min(6.5dvh,3rem)] w-[min(6.5dvh,3rem)] md:h-[min(8dvh,3.5rem)] md:w-[min(8dvh,3.5rem)]" />
               おとをきく
             </span>
           </button>
-          <p className="min-h-6 text-center text-[clamp(0.9rem,2.3dvh,1.5rem)] font-bold text-amber-600">
+          <p className="min-h-5 text-center text-[clamp(0.8rem,1.9dvh,1.2rem)] font-bold text-amber-600">
             {audioMessage}
           </p>
 
           <div
-            className={`min-h-12 text-center text-[clamp(1.5rem,4.2dvh,3rem)] font-extrabold ${
+            className={`min-h-9 text-center text-[clamp(1.1rem,3.2dvh,2.1rem)] font-extrabold ${
               gameState === "cleared" || result === "correct"
                 ? "animate-bounce text-emerald-500"
                 : gameState === "failed" || result === "wrong"
@@ -177,29 +197,29 @@ export default function SoundQuiz() {
             {resultText}
             {(gameState === "cleared" || result === "correct") && (
               <span className="ml-2 inline-flex items-center">
-                <Sparkles className="h-8 w-8" />
+                <Sparkles className="h-6 w-6 md:h-8 md:w-8" />
               </span>
             )}
           </div>
-          <p className="min-h-6 text-center text-[clamp(0.9rem,2.3dvh,1.5rem)] font-bold text-rose-600">
+          <p className="min-h-5 text-center text-[clamp(0.8rem,1.9dvh,1.2rem)] font-bold text-rose-600">
             {correctMessage}
           </p>
         </div>
 
         <div className="w-full">
-          <p className="mb-2 text-center text-[clamp(0.95rem,2.5dvh,1.5rem)] font-bold text-slate-700 md:mb-4">
+          <p className="mb-1 text-center text-[clamp(0.85rem,2.1dvh,1.2rem)] font-bold text-slate-700 md:mb-3">
             {Math.min(questionIndex + 1, totalQuestions)} / {totalQuestions}
           </p>
 
           {gameState === "playing" ? (
-            <div className="grid w-full grid-cols-2 gap-2 md:gap-6">
+            <div className="grid w-full grid-cols-2 gap-1.5 md:gap-4">
               {choices.map((animal) => (
                 <button
                   key={animal.name}
                   type="button"
                   onClick={() => handleSelect(animal.name)}
                   disabled={result !== "idle"}
-                  className={`rounded-3xl border-2 border-white px-2 py-[clamp(0.5rem,1.8dvh,1.25rem)] text-[clamp(1.2rem,3.8dvh,2.25rem)] font-black text-slate-800 shadow-md transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-90 md:px-4 md:py-7 md:text-4xl ${
+                  className={`rounded-3xl border-2 border-white px-2 py-[clamp(0.35rem,1.2dvh,0.8rem)] text-[clamp(1rem,2.8dvh,1.8rem)] font-black text-slate-800 shadow-md transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-90 md:px-3 md:py-[clamp(0.6rem,1.5dvh,1rem)] ${
                     result === "wrong" && animal.name !== currentAnswer.name
                       ? "animate-shake bg-rose-200"
                       : "bg-violet-100 hover:bg-violet-200"
@@ -214,7 +234,7 @@ export default function SoundQuiz() {
               <button
                 type="button"
                 onClick={resetGame}
-                className="rounded-2xl bg-emerald-500 px-8 py-4 text-2xl font-black text-white shadow-md transition hover:bg-emerald-600 active:scale-95"
+                className="rounded-2xl bg-emerald-500 px-6 py-3 text-[clamp(1.1rem,2.8dvh,1.8rem)] font-black text-white shadow-md transition hover:bg-emerald-600 active:scale-95"
               >
                 もういちど あそぶ
               </button>
