@@ -136,32 +136,32 @@ export default function SoundQuiz() {
   );
 
   return (
-    <div className="flex h-screen w-full items-center justify-center overflow-hidden bg-gradient-to-b from-sky-100 via-emerald-100 to-yellow-100 p-4 md:p-8">
-      <main className="flex h-full w-full max-w-4xl flex-col items-center justify-between rounded-3xl bg-white/80 p-6 shadow-xl backdrop-blur-sm md:p-10">
+    <div className="flex min-h-[100dvh] w-full items-center justify-center overflow-y-auto bg-gradient-to-b from-sky-100 via-emerald-100 to-yellow-100 p-3 md:p-8">
+      <main className="flex min-h-full w-full max-w-4xl flex-col items-center justify-between gap-5 rounded-3xl bg-white/80 p-4 shadow-xl backdrop-blur-sm md:p-10">
         <h1 className="text-center text-4xl font-black tracking-wide text-fuchsia-600 md:text-5xl">
           おとあそび
         </h1>
 
-        <div className="flex flex-col items-center gap-5">
+        <div className="flex flex-col items-center gap-4 md:gap-5">
           <button
             type="button"
             onClick={playSound}
             disabled={isPlaying}
-            className={`flex h-56 w-56 items-center justify-center rounded-3xl border-4 border-white bg-orange-400 text-white shadow-lg transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 md:h-64 md:w-64 ${
+            className={`flex h-44 w-44 items-center justify-center rounded-3xl border-4 border-white bg-orange-400 text-white shadow-lg transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 sm:h-52 sm:w-52 md:h-64 md:w-64 ${
               isPlaying ? "animate-pulse" : "hover:bg-orange-500"
             }`}
           >
-            <span className="flex flex-col items-center gap-2 text-2xl font-bold md:text-3xl">
-              <Volume2 className="h-16 w-16 md:h-20 md:w-20" />
+            <span className="flex flex-col items-center gap-2 text-xl font-bold sm:text-2xl md:text-3xl">
+              <Volume2 className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20" />
               おとをきく
             </span>
           </button>
-          <p className="min-h-8 text-center text-xl font-bold text-amber-600 md:text-2xl">
+          <p className="min-h-8 text-center text-lg font-bold text-amber-600 md:text-2xl">
             {audioMessage}
           </p>
 
           <div
-            className={`min-h-14 text-center text-4xl font-extrabold md:text-5xl ${
+            className={`min-h-14 text-center text-3xl font-extrabold md:text-5xl ${
               gameState === "cleared" || result === "correct"
                 ? "animate-bounce text-emerald-500"
                 : gameState === "failed" || result === "wrong"
@@ -181,25 +181,25 @@ export default function SoundQuiz() {
               </span>
             )}
           </div>
-          <p className="min-h-8 text-center text-xl font-bold text-rose-600 md:text-2xl">
+          <p className="min-h-8 text-center text-lg font-bold text-rose-600 md:text-2xl">
             {correctMessage}
           </p>
         </div>
 
         <div className="w-full">
-          <p className="mb-4 text-center text-xl font-bold text-slate-700 md:text-2xl">
+          <p className="mb-4 text-center text-lg font-bold text-slate-700 md:text-2xl">
             {Math.min(questionIndex + 1, totalQuestions)} / {totalQuestions}
           </p>
 
           {gameState === "playing" ? (
-            <div className="grid w-full grid-cols-2 gap-6">
+            <div className="grid w-full grid-cols-2 gap-3 sm:gap-4 md:gap-6">
               {choices.map((animal) => (
                 <button
                   key={animal.name}
                   type="button"
                   onClick={() => handleSelect(animal.name)}
                   disabled={result !== "idle"}
-                  className={`rounded-3xl border-2 border-white px-4 py-7 text-3xl font-black text-slate-800 shadow-md transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-90 md:text-4xl ${
+                  className={`rounded-3xl border-2 border-white px-3 py-4 text-2xl font-black text-slate-800 shadow-md transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-90 sm:px-4 sm:py-6 sm:text-3xl md:py-7 md:text-4xl ${
                     result === "wrong" && animal.name !== currentAnswer.name
                       ? "animate-shake bg-rose-200"
                       : "bg-violet-100 hover:bg-violet-200"
