@@ -5,15 +5,19 @@ import pathlib
 import re
 import subprocess
 import tempfile
-from typing import Dict, List, Optional
+import time
+from typing import Dict, List, Optional, Set
 import urllib.parse
 import urllib.request
+import urllib.error
 
 API_URL = "https://commons.wikimedia.org/w/api.php"
 USER_AGENT = "kids-sound-audio-fetcher/1.0"
+MIN_REQUEST_INTERVAL_SEC = 1.0
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 QUESTIONS_FILE = ROOT / "src" / "data" / "questions.ts"
 OUT_DIR = ROOT / "public" / "sounds"
+LAST_REQUEST_AT = 0.0
 QUERY_OVERRIDES = {
   "pig.mp3": ["pig oink", "pig grunt"],
   "ambulance.mp3": ["ambulance siren"],
@@ -55,10 +59,32 @@ def read_filenames() -> List[str]:
 
 
 def request_json(params: Dict[str, str]) -> Dict:
+  global LAST_REQUEST_AT
+  now = time.monotonic()
+  elapsed = now - LAST_REQUEST_AT
+  if elapsed < MIN_REQUEST_INTERVAL_SEC:
+    time.sleep(MIN_REQUEST_INTERVAL_SEC - elapsed)
+
   url = f"{API_URL}?{urllib.parse.urlencode(params)}"
   req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-  with urllib.request.urlopen(req, timeout=20) as response:
-    return json.loads(response.read().decode("utf-8"))
+  for attempt in range(4):
+    try:
+      with urllib.request.urlopen(req, timeout=20) as response:
+        LAST_REQUEST_AT = time.monotonic()
+        return json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as err:
+      if err.code == 429 and attempt < 3:
+        time.sleep(12 * (attempt + 1))
+        continue
+      if err.code == 429:
+        return {}
+      raise
+    except Exception:
+      if attempt < 3:
+        time.sleep(2 * (attempt + 1))
+        continue
+      return {}
+  return {}
 
 
 def search_audio_file_titles(query: str) -> List[str]:
@@ -73,6 +99,50 @@ def search_audio_file_titles(query: str) -> List[str]:
     }
   )
   return [item["title"] for item in data.get("query", {}).get("search", [])]
+
+
+def allpages_file_titles(prefix: str) -> List[str]:
+  if not prefix:
+    return []
+  # allpages is useful but costly; keep low limit for server friendliness.
+  data = request_json(
+    {
+      "action": "query",
+      "list": "allpages",
+      "apnamespace": "6",
+      "aplimit": "4",
+      "apprefix": prefix,
+      "format": "json",
+    }
+  )
+  return [item["title"] for item in data.get("query", {}).get("allpages", [])]
+
+
+def candidate_titles_from_query(query: str) -> List[str]:
+  titles: List[str] = []
+  seen: Set[str] = set()
+
+  for title in search_audio_file_titles(query):
+    if title not in seen:
+      seen.add(title)
+      titles.append(title)
+
+  parts = [p for p in re.split(r"[\s\-_/]+", query) if p]
+  prefixes: List[str] = []
+  if query:
+    prefixes.append(query.title())
+  if parts:
+    prefixes.append(parts[0].title())
+  if len(parts) >= 2:
+    prefixes.append(f"{parts[0].title()} {parts[1].title()}")
+
+  for prefix in prefixes:
+    for title in allpages_file_titles(prefix):
+      if title not in seen:
+        seen.add(title)
+        titles.append(title)
+
+  return titles
 
 
 def get_file_url(title: str) -> Optional[str]:
@@ -97,8 +167,15 @@ def get_file_url(title: str) -> Optional[str]:
 
 
 def download(url: str, path: pathlib.Path) -> None:
+  global LAST_REQUEST_AT
+  now = time.monotonic()
+  elapsed = now - LAST_REQUEST_AT
+  if elapsed < MIN_REQUEST_INTERVAL_SEC:
+    time.sleep(MIN_REQUEST_INTERVAL_SEC - elapsed)
+
   req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
   with urllib.request.urlopen(req, timeout=60) as response:
+    LAST_REQUEST_AT = time.monotonic()
     path.write_bytes(response.read())
 
 
@@ -135,21 +212,26 @@ def build_queries(file_name: str) -> List[str]:
 def main() -> None:
   OUT_DIR.mkdir(parents=True, exist_ok=True)
   file_names = read_filenames()
+  max_items = int(os.environ.get("MAX_ITEMS", "0"))
   failed: List[str] = []
   done = 0
+  attempted = 0
 
   for file_name in file_names:
     out_path = OUT_DIR / file_name
     if out_path.exists() and out_path.stat().st_size > 0:
       done += 1
       continue
+    if max_items > 0 and attempted >= max_items:
+      break
+    attempted += 1
 
     success = False
 
     with tempfile.TemporaryDirectory() as tmp_dir:
       tmp_path = pathlib.Path(tmp_dir)
       for query in build_queries(file_name):
-        titles = search_audio_file_titles(query)
+        titles = candidate_titles_from_query(query)
         for title in titles:
           file_url = get_file_url(title)
           if not file_url:
@@ -167,10 +249,10 @@ def main() -> None:
 
     if success:
       done += 1
-      print(f"OK  {file_name}")
+      print(f"OK  {file_name}", flush=True)
     else:
       failed.append(file_name)
-      print(f"NG  {file_name}")
+      print(f"NG  {file_name}", flush=True)
 
   print("")
   print(f"Completed: {done}/{len(file_names)}")
