@@ -78,6 +78,8 @@ export default function SoundQuiz() {
   }, []);
 
   const playSound = useCallback(async () => {
+    if (isPlaying) return;
+
     const soundPath = `/sounds/${currentAnswer.soundFile}`;
     setAudioMessage("");
     setIsPlaying(true);
@@ -102,7 +104,7 @@ export default function SoundQuiz() {
       setAudioMessage("おとが さいせい できないよ");
       setIsPlaying(false);
     }
-  }, [currentAnswer.soundFile]);
+  }, [currentAnswer.soundFile, isPlaying]);
 
   const handleSelect = useCallback(
     (name: string) => {
@@ -144,7 +146,8 @@ export default function SoundQuiz() {
           <button
             type="button"
             onClick={playSound}
-            className={`flex h-56 w-56 items-center justify-center rounded-3xl border-4 border-white bg-orange-400 text-white shadow-lg transition active:scale-95 md:h-64 md:w-64 ${
+            disabled={isPlaying}
+            className={`flex h-56 w-56 items-center justify-center rounded-3xl border-4 border-white bg-orange-400 text-white shadow-lg transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 md:h-64 md:w-64 ${
               isPlaying ? "animate-pulse" : "hover:bg-orange-500"
             }`}
           >
